@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoteShare — Online Notes Sharing System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f8f9fb;--card:#fff;--nav:#fff;--text:#1a1a2e;--sub:#6b7280;--border:#e5e7eb;
+  --accent:#6c63ff;--accent2:#4f46e5;--green:#10b981;--red:#ef4444;--amber:#f59e0b;
+  --tag-bg:#ede9fe;--tag-text:#5b21b6;--shadow:0 2px 12px rgba(0,0,0,.07);
+}
+body.dark{
+  --bg:#0f0f1a;--card:#1a1a2e;--nav:#16213e;--text:#e2e8f0;--sub:#94a3b8;--border:#2d3748;
+  --tag-bg:#312e81;--tag-text:#a5b4fc;--shadow:0 2px 12px rgba(0,0,0,.4);
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;transition:background .3s,color .3s;min-height:100vh}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;border:none;outline:none;font-family:inherit}
+input,select,textarea{font-family:inherit;outline:none}
+
+/* NAV */
+nav{background:var(--nav);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.logo{font-size:1.3rem;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.nav-links{display:flex;align-items:center;gap:1rem}
+.nav-btn{padding:7px 18px;border-radius:8px;font-size:.9rem;font-weight:500;transition:all .2s}
+.btn-outline{border:1.5px solid var(--accent);color:var(--accent);background:transparent}
+.btn-outline:hover{background:var(--accent);color:#fff}
+.btn-primary{background:var(--accent);color:#fff;border:none}
+.btn-primary:hover{background:var(--accent2)}
+.dark-toggle{width:36px;height:36px;border-radius:50%;background:var(--border);color:var(--text);font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* VIEWS */
+.view{display:none}.view.active{display:block}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#6c63ff 0%,#4f46e5 50%,#312e81 100%);color:#fff;padding:5rem 2rem 4rem;text-align:center}
+.hero h1{font-size:2.8rem;font-weight:800;margin-bottom:1rem;line-height:1.2}
+.hero p{font-size:1.15rem;opacity:.9;margin-bottom:2.5rem;max-width:560px;margin-left:auto;margin-right:auto}
+.hero-search{display:flex;gap:0;max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.2)}
+.hero-search input{flex:1;padding:14px 18px;border:none;font-size:1rem;color:#1a1a2e}
+.hero-search button{padding:14px 24px;background:var(--accent);color:#fff;font-size:.95rem;font-weight:600}
+.hero-search button:hover{background:var(--accent2)}
+.hero-stats{display:flex;justify-content:center;gap:3rem;margin-top:3rem;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-num{font-size:2rem;font-weight:800}
+.stat-label{font-size:.85rem;opacity:.8}
+
+/* CONTENT */
+.container{max-width:1200px;margin:0 auto;padding:0 2rem}
+.section{padding:3rem 0}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
+.section-title{font-size:1.4rem;font-weight:700}
+.filters{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:2rem}
+.filter-btn{padding:7px 16px;border-radius:20px;font-size:.85rem;font-weight:500;background:var(--card);border:1.5px solid var(--border);color:var(--sub);cursor:pointer;transition:all .2s}
+.filter-btn.active,.filter-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* CARDS */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
+.note-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s}
+.note-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.12)}
+.note-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem}
+.note-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.icon-pdf{background:#fef2f2;color:#ef4444}
+.note-actions{display:flex;gap:.5rem}
+.icon-btn{width:32px;height:32px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--sub);display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s;cursor:pointer}
+.icon-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.note-title{font-size:1rem;font-weight:600;margin-bottom:.4rem;line-height:1.3}
+.note-desc{font-size:.85rem;color:var(--sub);margin-bottom:.9rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.9rem}
+.tag{padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:500;background:var(--tag-bg);color:var(--tag-text)}
+.note-meta{display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--sub);padding-top:.75rem;border-top:1px solid var(--border)}
+.meta-left{display:flex;align-items:center;gap:.5rem}
+.avatar-xs{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.meta-right{display:flex;align-items:center;gap:.75rem}
+.like-btn{background:none;border:none;color:var(--sub);font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:3px;padding:0}
+.like-btn.liked{color:#ef4444}
+
+/* SORT */
+.sort-select{padding:7px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:.85rem}
+
+/* DOWNLOAD BTN */
+.dl-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:.82rem;font-weight:600;border:none;cursor:pointer;transition:background .2s;text-decoration:none}
+.dl-btn:hover{background:var(--accent2)}
+.dl-btn.loading{opacity:.7;pointer-events:none}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:18px;width:90%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-header{padding:1.5rem 1.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:1.2rem;font-weight:700}
+.modal-close{width:32px;height:32px;border-radius:8px;background:var(--bg);border:none;color:var(--sub);font-size:1.1rem;cursor:pointer}
+.modal-body{padding:1.5rem 1.75rem}
+
+/* DETAIL VIEW */
+.detail-hero{background:linear-gradient(135deg,#6c63ff,#4f46e5);color:#fff;padding:3rem 0 2rem}
+.detail-back{display:inline-flex;align-items:center;gap:.5rem;color:rgba(255,255,255,.8);cursor:pointer;font-size:.9rem;font-weight:500;margin-bottom:1.5rem}
+.detail-back:hover{color:#fff}
+.detail-title{font-size:2rem;font-weight:800;margin-bottom:.75rem;line-height:1.2}
+.detail-meta{display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.85rem;opacity:.9}
+.detail-body{padding:2rem 0}
+.detail-grid{display:grid;grid-template-columns:1fr 320px;gap:2rem}
+.detail-desc{font-size:1rem;line-height:1.8;color:var(--text);margin-bottom:1.5rem}
+.detail-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow)}
+.detail-card-title{font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--accent)}
+.dl-big{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;font-size:1rem;font-weight:700;border:none;cursor:pointer;transition:background .2s;margin-bottom:1rem}
+.dl-big:hover{background:var(--accent2)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--border);font-size:.88rem}
+.stat-row:last-child{border-bottom:none}
+.stat-val{font-weight:700;color:var(--accent)}
+
+/* COMMENTS */
+.comment{background:var(--bg);border-radius:10px;padding:1rem;margin-bottom:.75rem}
+.comment-header{display:flex;justify-content:space-between;font-size:.8rem;color:var(--sub);margin-bottom:.4rem}
+.comment-user{font-weight:700;color:var(--text)}
+.comment-input{display:flex;gap:.75rem;margin-top:1rem}
+.comment-input input{flex:1;padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.9rem}
+.comment-input input:focus{border-color:var(--accent)}
+.comment-input button{padding:9px 18px;border-radius:8px;background:var(--accent);color:#fff;font-size:.85rem;font-weight:600;border:none;cursor:pointer}
+
+/* FORMS */
+.form-group{margin-bottom:1.2rem}
+.form-label{display:block;font-size:.88rem;font-weight:600;margin-bottom:.4rem}
+.form-input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font-size:.92rem;transition:border .2s}
+.form-input:focus{border-color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem}
+.btn-cancel{padding:9px 20px;border-radius:9px;background:var(--bg);border:1.5px solid var(--border);color:var(--text);font-size:.9rem;font-weight:500;cursor:pointer}
+.btn-submit{padding:9px 24px;border-radius:9px;background:var(--accent);color:#fff;font-size:.9rem;font-weight:600;border:none;cursor:pointer}
+.btn-submit:hover{background:var(--accent2)}
+
+/* AUTH */
+.auth-page{min-height:calc(100vh - 62px);display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem;width:100%;max-width:420px;box-shadow:var(--shadow)}
+.auth-title{font-size:1.6rem;font-weight:800;text-align:center;margin-bottom:.4rem}
+.auth-sub{color:var(--sub);text-align:center;margin-bottom:2rem;font-size:.9rem}
+.auth-switch{text-align:center;margin-top:1.5rem;font-size:.9rem;color:var(--sub)}
+.auth-switch a{color:var(--accent);font-weight:600;cursor:pointer}
+.divider{text-align:center;color:var(--sub);margin:1.2rem 0;font-size:.85rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;right:2rem;padding:1rem 1.5rem;border-radius:12px;font-size:.9rem;font-weight:600;color:#fff;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;transform:translateY(20px);transition:all .3s}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:#10b981}.toast.error{background:#ef4444}.toast.info{background:#6c63ff}
+
+/* LOADING */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--sub)}
+.empty-state .icon{font-size:3rem;margin-bottom:1rem}
+
+/* RATING */
+.stars{display:flex;gap:3px}
+.star{font-size:1rem;cursor:pointer;color:#d1d5db;transition:color .15s}
+.star.filled{color:#f59e0b}
+
+@media(max-width:768px){
+  .detail-grid{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .hero h1{font-size:2rem}
+  .hero-stats{gap:1.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">📚 NoteShare</div>
+  <div class="nav-links">
+    <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
+    <div id="navGuest">
+      <button class="nav-btn btn-outline" onclick="showView('login')">Login</button>
+      <button class="nav-btn btn-primary" onclick="showView('register')">Sign Up</button>
+    </div>
+    <div id="navUser" style="display:none;align-items:center;gap:.75rem">
+      <button class="nav-btn btn-primary" onclick="openModal('uploadModal')">+ Upload</button>
+      <div class="user-avatar" id="userAvatar" onclick="showView('home')">?</div>
+      <button class="nav-btn btn-outline" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ HOME VIEW ══════════════════════════════════════════════════════════ -->
+<div class="view active" id="view-home">
+  <div class="hero">
+    <h1>Share &amp; Discover<br>Study Notes</h1>
+    <p>Access thousands of student-created notes, summaries, and study guides — completely free.</p>
+    <div class="hero-search">
+      <input type="text" id="heroSearch" placeholder="Search notes, topics, subjects…" onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()">🔍 Search</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Notes Shared</div></div>
+      <div class="stat"><div class="stat-num" id="statDl">0</div><div class="stat-label">Downloads</div></div>
+      <div class="stat"><div class="stat-num" id="statLikes">0</div><div class="stat-label">Likes</div></div>
+    </div>
+  </div>
+
+  <div class="container section">
+    <div class="section-header">
+      <div class="section-title">📖 Browse Notes</div>
+      <select class="sort-select" id="sortSelect" onchange="loadNotes()">
+        <option value="date">Newest First</option>
+        <option value="downloads">Most Downloaded</option>
+        <option value="likes">Most Liked</option>
+        <option value="rating">Top Rated</option>
+      </select>
+    </div>
+    <div class="filters" id="filterBtns">
+      <button class="filter-btn active" onclick="setFilter('All',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('Mathematics',this)">Mathematics</button>
+      <button class="filter-btn" onclick="setFilter('Chemistry',this)">Chemistry</button>
+      <button class="filter-btn" onclick="setFilter('Computer Science',this)">Computer Science</button>
+      <button class="filter-btn" onclick="setFilter('Physics',this)">Physics</button>
+      <button class="filter-btn" onclick="setFilter('Political Science',this)">Political Science</button>
+    </div>
+    <div class="notes-grid" id="notesGrid">
+      <div class="empty-state"><div class="icon">⏳</div><p>Loading notes…</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DETAIL VIEW ════════════════════════════════════════════════════════ -->
+<div class="view" id="view-detail">
+  <div class="detail-hero">
+    <div class="container">
+      <div class="detail-back" onclick="showView('home')">← Back to Notes</div>
+      <div id="detailSubjectBadge" style="font-size:.85rem;opacity:.8;margin-bottom:.5rem"></div>
+      <div class="detail-title" id="detailTitle">—</div>
+      <div class="detail-meta" id="detailMeta"></div>
+    </div>
+  </div>
+  <div class="container detail-body">
+    <div class="detail-grid">
+      <div>
+        <h3 style="margin-bottom:.75rem;color:var(--accent)">📋 Description</h3>
+        <div class="detail-desc" id="detailDesc"></div>
+        <h3 style="margin-bottom:.75rem;color:var(--accent)">🏷 Tags</h3>
+        <div class="note-tags" id="detailTags" style="margin-bottom:2rem"></div>
+        <h3 style="margin-bottom:1rem;color:var(--accent)">💬 Comments <span id="commentCount"></span></h3>
+        <div id="detailComments"></div>
+        <div class="comment-input" id="commentBox" style="display:none">
+          <input type="text" id="commentText" placeholder="Add a comment…">
+          <button onclick="postComment()">Post</button>
+        </div>
+        <div id="commentLoginMsg" style="color:var(--sub);font-size:.85rem;margin-top:.75rem;display:none">
+          <a onclick="showView('login')" style="color:var(--accent);cursor:pointer;font-weight:600">Login</a> to leave a comment.
+        </div>
+      </div>
+      <div>
+        <div class="detail-card">
+          <div class="detail-card-title">⬇ Download PDF</div>
+          <button class="dl-big" id="dlBigBtn" onclick="downloadNote(currentDetail.id, this)">
+            ⬇ Download PDF
+          </button>
+          <div class="detail-card-title" style="margin-top:1rem">📊 Info</div>
+          <div class="stat-row"><span>Downloads</span><span class="stat-val" id="dlCount">0</span></div>
+          <div class="stat-row"><span>Likes</span><span class="stat-val" id="likeCount">0</span></div>
+          <div class="stat-row"><span>Format</span><span class="stat-val">PDF</span></div>
+          <div class="stat-row"><span>Rating</span><span class="stat-val" id="detailRating">—</span></div>
+          <div style="margin-top:1rem">
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:.5rem">Rate this note:</div>
+            <div class="stars" id="ratingStars">
+              <span class="star" onclick="rateNote(1)">★</span>
+              <span class="star" onclick="rateNote(2)">★</span>
+              <span class="star" onclick="rateNote(3)">★</span>
+              <span class="star" onclick="rateNote(4)">★</span>
+              <span class="star" onclick="rateNote(5)">★</span>
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <button class="like-btn" id="detailLikeBtn" onclick="likeNote(currentDetail.id)" style="font-size:.9rem;font-weight:600;color:var(--sub)">
+              🤍 Like this note
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════════ -->
+<div class="view" id="view-login">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-title">Welcome back 👋</div>
+      <div class="auth-sub">Login to access your notes</div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="loginEmail" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="loginPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-submit" style="width:100%;padding:11px" onclick="doLogin()">Login</button>
+      <div class="auth-switch">Don't have an account? <a onclick="showView('register')">Sign up</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REGISTER ═══════════════════════════════════════════════════════════ -->
+<div class="view" id="view-register">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-title">Join NoteShare 🚀</div>
+      <div class="auth-sub">Create your free account</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" type="text" id="regFirst" placeholder="Aarav">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" type="text" id="regLast" placeholder="Sharma">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="regEmail" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="regPwd" placeholder="Min 6 characters">
+      </div>
+      <button class="btn-submit" style="width:100%;padding:11px" onclick="doRegister()">Create Account</button>
+      <div class="auth-switch">Already have an account? <a onclick="showView('login')">Login</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ UPLOAD MODAL ═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="uploadModal" onclick="if(event.target===this)closeModal('uploadModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📤 Upload Note</div>
+      <button class="modal-close" onclick="closeModal('uploadModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" type="text" id="upTitle" placeholder="e.g. Calculus Chapter 3 Notes">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Subject *</label>
+          <select class="form-input" id="upSubject">
+            <option value="Mathematics">Mathematics</option>
+            <option value="Chemistry">Chemistry</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Physics">Physics</option>
+            <option value="Political Science">Political Science</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (comma-separated)</label>
+          <input class="form-input" type="text" id="upTags" placeholder="e.g. algebra, integration">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="upDesc" rows="3" placeholder="What does this note cover?"></textarea>
+      </div>
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="closeModal('uploadModal')">Cancel</button>
+        <button class="btn-submit" onclick="submitUpload()">Upload Note</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────
+let currentUser = null;
+let allNotes    = [];
+let currentFilter = 'All';
+let currentSearch = '';
+let currentDetail = null;
+
+// Demo users (frontend auth only)
+const DEMO_USERS = [
+  {id:1, name:'Aarav Sharma',  email:'aarav@example.com',  password:'demo123'},
+  {id:2, name:'Priya Singh',   email:'priya@example.com',  password:'demo123'},
+  {id:3, name:'Rahul Mehta',   email:'rahul@example.com',  password:'demo123'},
+];
+let nextUserId = 10;
+
+// ── View Router ───────────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'home') loadNotes();
+  window.scrollTo(0, 0);
+}
+
+// ── Dark Mode ─────────────────────────────────────────────────────────────
+function toggleDark() {
+  document.body.classList.toggle('dark');
+  document.querySelector('.dark-toggle').textContent =
+    document.body.classList.contains('dark') ? '☀️' : '🌙';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd   = document.getElementById('loginPwd').value;
+  const user  = DEMO_USERS.find(u => u.email === email && u.password === pwd);
+  if (!user) { toast('Invalid credentials', 'error'); return; }
+  setUser(user);
+  showView('home');
+  toast(`Welcome back, ${user.name.split(' ')[0]}! 👋`);
+}
+
+function doRegister() {
+  const first = document.getElementById('regFirst').value.trim();
+  const last  = document.getElementById('regLast').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pwd   = document.getElementById('regPwd').value;
+  if (!first || !email || pwd.length < 6) { toast('Fill all fields (min 6-char password)', 'error'); return; }
+  const user = { id: nextUserId++, name: `${first} ${last}`, email, password: pwd };
+  DEMO_USERS.push(user);
+  setUser(user);
+  showView('home');
+  toast(`Account created! Welcome, ${first}! 🎉`);
+}
+
+function setUser(user) {
+  currentUser = user;
+  document.getElementById('navGuest').style.display = 'none';
+  document.getElementById('navUser').style.display  = 'flex';
+  document.getElementById('userAvatar').textContent =
+    user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('navGuest').style.display = '';
+  document.getElementById('navUser').style.display  = 'none';
+  showView('home');
+  toast('Logged out', 'info');
+}
+
+// ── Notes API ─────────────────────────────────────────────────────────────
+async function loadNotes() {
+  const grid = document.getElementById('notesGrid');
+  grid.innerHTML = '<div class="empty-state"><div class="spinner" style="width:32px;height:32px;border-color:var(--accent);border-top-color:transparent;margin:0 auto 1rem"></div><p>Loading…</p></div>';
+
+  const params = new URLSearchParams();
+  if (currentFilter !== 'All') params.set('subject', currentFilter);
+  if (currentSearch) params.set('search', currentSearch);
+
+  try {
+    const res  = await fetch('/api/notes?' + params);
+    const notes = await res.json();
+    allNotes = notes;
+
+    // Sort
+    const sort = document.getElementById('sortSelect').value;
+    notes.sort((a,b) => sort === 'downloads' ? b.downloads - a.downloads :
+                        sort === 'likes'     ? b.likes - a.likes :
+                        sort === 'rating'    ? b.rating - a.rating :
+                        new Date(b.date) - new Date(a.date));
+
+    updateHeroStats(notes);
+    renderGrid(notes);
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Could not connect to server.<br>Make sure app.py is running.</p></div>';
+  }
+}
+
+function updateHeroStats(notes) {
+  document.getElementById('statTotal').textContent = notes.length;
+  document.getElementById('statDl').textContent    = notes.reduce((a,n)=>a+n.downloads,0);
+  document.getElementById('statLikes').textContent = notes.reduce((a,n)=>a+n.likes,0);
+}
+
+function renderGrid(notes) {
+  const grid = document.getElementById('notesGrid');
+  if (!notes.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No notes found.</p></div>';
+    return;
+  }
+  grid.innerHTML = notes.map(noteCardHTML).join('');
+}
+
+function noteCardHTML(n) {
+  const initials = n.userId === 1 ? 'AS' : n.userId === 2 ? 'PS' : 'RM';
+  const name     = n.userId === 1 ? 'Aarav Sharma' : n.userId === 2 ? 'Priya Singh' : 'Rahul Mehta';
+  return `
+  <div class="note-card">
+    <div class="note-card-header">
+      <div class="note-icon icon-pdf">📄</div>
+      <div class="note-actions">
+        <button class="icon-btn" title="Download PDF" onclick="downloadNote(${n.id},this)">⬇</button>
+        <button class="icon-btn" title="View details" onclick="openDetail(${n.id})">👁</button>
+      </div>
+    </div>
+    <div class="note-title">${n.title}</div>
+    <div class="note-desc">${n.desc}</div>
+    <div class="note-tags">${n.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    <div class="note-meta">
+      <div class="meta-left">
+        <div class="avatar-xs">${initials}</div>
+        <span>${name}</span>
+      </div>
+      <div class="meta-right">
+        <span>⬇ ${n.downloads}</span>
+        <button class="like-btn" onclick="likeNote(${n.id})">🤍 ${n.likes}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Filters & Search ──────────────────────────────────────────────────────
+function setFilter(val, btn) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadNotes();
+}
+
+function doSearch() {
+  currentSearch = document.getElementById('heroSearch').value.trim();
+  loadNotes();
+}
+
+// ── Download PDF ──────────────────────────────────────────────────────────
+async function downloadNote(id, btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`/api/notes/${id}/download`);
+    if (!res.ok) throw new Error('Server error');
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const note = allNotes.find(n => n.id === id) || currentDetail;
+    a.href     = url;
+    a.download = (note ? note.title.replace(/\s+/g,'_') : 'note') + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('PDF downloaded! 🎉');
+
+    // Update download count in UI
+    if (currentDetail && currentDetail.id === id) {
+      currentDetail.downloads++;
+      document.getElementById('dlCount').textContent = currentDetail.downloads;
+    }
+    // Refresh grid counts
+    const noteInList = allNotes.find(n => n.id === id);
+    if (noteInList) noteInList.downloads++;
+
+  } catch(e) {
+    toast('Download failed — is the server running?', 'error');
+  } finally {
+    btn.innerHTML = orig;
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+// ── Like ──────────────────────────────────────────────────────────────────
+async function likeNote(id) {
+  if (!currentUser) { toast('Login to like notes', 'error'); return; }
+  try {
+    const res  = await fetch(`/api/notes/${id}/like`, { method:'POST' });
+    const data = await res.json();
+    toast('Liked! ❤️');
+    if (currentDetail && currentDetail.id === id) {
+      document.getElementById('likeCount').textContent = data.likes;
+    }
+    loadNotes();
+  } catch(e) { toast('Error', 'error'); }
+}
+
+// ── Rating ────────────────────────────────────────────────────────────────
+function rateNote(stars) {
+  if (!currentUser) { toast('Login to rate notes', 'error'); return; }
+  document.querySelectorAll('#ratingStars .star').forEach((s,i) => {
+    s.classList.toggle('filled', i < stars);
+  });
+  const n = currentDetail;
+  if (!n) return;
+  n.ratingCount++;
+  n.rating = ((n.rating * (n.ratingCount-1) + stars) / n.ratingCount);
+  document.getElementById('detailRating').textContent = `⭐ ${n.rating.toFixed(1)}`;
+  toast('Rating saved! ⭐');
+}
+
+// ── Detail View ───────────────────────────────────────────────────────────
+function openDetail(id) {
+  const n = allNotes.find(n => n.id === id);
+  if (!n) return;
+  currentDetail = n;
+
+  const names = {1:'Aarav Sharma', 2:'Priya Singh', 3:'Rahul Mehta'};
+  const name  = names[n.userId] || `User ${n.userId}`;
+
+  document.getElementById('detailSubjectBadge').textContent = `[ ${n.subject} ]`;
+  document.getElementById('detailTitle').textContent = n.title;
+  document.getElementById('detailMeta').innerHTML =
+    `<span>👤 ${name}</span><span>📅 ${n.date}</span><span>⬇ ${n.downloads} downloads</span><span>❤ ${n.likes} likes</span>`;
+  document.getElementById('detailDesc').textContent = n.desc;
+  document.getElementById('detailTags').innerHTML =
+    n.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  document.getElementById('dlCount').textContent   = n.downloads;
+  document.getElementById('likeCount').textContent = n.likes;
+  document.getElementById('detailRating').textContent =
+    n.ratingCount ? `⭐ ${n.rating.toFixed(1)} (${n.ratingCount})` : 'No ratings yet';
+
+  document.getElementById('dlBigBtn').innerHTML = '⬇ Download PDF';
+  document.getElementById('dlBigBtn').onclick = () => downloadNote(n.id, document.getElementById('dlBigBtn'));
+
+  renderComments(n);
+
+  // Comment box
+  document.getElementById('commentBox').style.display      = currentUser ? 'flex' : 'none';
+  document.getElementById('commentLoginMsg').style.display = currentUser ? 'none' : 'block';
+
+  // Reset stars
+  document.querySelectorAll('#ratingStars .star').forEach(s => s.classList.remove('filled'));
+
+  showView('detail');
+}
+
+function renderComments(n) {
+  document.getElementById('commentCount').textContent =
+    n.comments.length ? `(${n.comments.length})` : '';
+  document.getElementById('detailComments').innerHTML = n.comments.length
+    ? n.comments.map(c => `
+      <div class="comment">
+        <div class="comment-header">
+          <span class="comment-user">${c.user}</span>
+          <span>${c.date}</span>
+        </div>
+        <div>${c.text}</div>
+      </div>`).join('')
+    : '<div style="color:var(--sub);font-size:.9rem;margin-bottom:1rem">No comments yet. Be the first!</div>';
+}
+
+async function postComment() {
+  if (!currentUser) { toast('Login required', 'error'); return; }
+  const text = document.getElementById('commentText').value.trim();
+  if (!text) return;
+  try {
+    const res = await fetch(`/api/notes/${currentDetail.id}/comment`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ user: currentUser.name, text })
+    });
+    const comment = await res.json();
+    currentDetail.comments.push(comment);
+    renderComments(currentDetail);
+    document.getElementById('commentText').value = '';
+    toast('Comment posted!');
+  } catch(e) { toast('Error posting comment', 'error'); }
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────
+async function submitUpload() {
+  if (!currentUser) { toast('Login required', 'error'); return; }
+  const title = document.getElementById('upTitle').value.trim();
+  const subject = document.getElementById('upSubject').value;
+  const tags = document.getElementById('upTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const desc = document.getElementById('upDesc').value.trim();
+  if (!title) { toast('Title is required', 'error'); return; }
+
+  try {
+    const res = await fetch('/api/notes', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ userId: currentUser.id, title, subject, tags, desc })
+    });
+    const note = await res.json();
+    allNotes.unshift(note);
+    closeModal('uploadModal');
+    document.getElementById('upTitle').value = '';
+    document.getElementById('upTags').value  = '';
+    document.getElementById('upDesc').value  = '';
+    toast('Note uploaded! 🎉');
+    loadNotes();
+  } catch(e) { toast('Upload failed', 'error'); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+loadNotes();
+</script>
+</body>
+</html>
